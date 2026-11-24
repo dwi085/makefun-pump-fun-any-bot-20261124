@@ -1,15 +1,19 @@
 // Six-Hour Spark — a simple early-momentum paper bot for pump.fun.
 //
-// Strategy, in one paragraph: watch every new bonding curve from its CreateEvent,
-// remember the price it is born at, and buy it once — a fixed 0.25 SOL stake — as soon
-// as it shows real early momentum (at least 4 trades and a price at least 12% above its
-// birth price, with enough real SOL reserve that the size cap lets us buy at least
-// 0.05 SOL). Never hold more than 5 coins at once, never buy the same coin twice, and
-// never chase: a coin that never shows momentum is simply skipped for good. Every
-// position exits on one of three hard rules — take profit at +40%, stop loss at -25%,
-// or a time exit after 15,000 slots held (~100 minutes) — selling the whole position.
-// No leverage, no shorts, no martingale, no randomness, no clock: every decision comes
-// only from the replay events the harness delivers, so two runs agree byte for byte.
+// Strategy, in one paragraph: watch every new bonding curve from its CreateEvent
+// and buy it once — a small fixed 0.02 SOL stake — as soon as the size cap lets us
+// buy at least 0.05 SOL worth (a fresh curve holds no real SOL, so the first trades
+// have to arrive first; a coin whose cap never gets there is skipped for good).
+// Never hold more than 5 coins at once and never buy the same coin twice: the small
+// stake and the 5-slot cap keep any single dud cheap, while the fast rotation puts
+// the bot on dozens of fresh coins per window so a rare runner can pay for the
+// bleeders. Every position exits on one of three hard rules — take profit at +100%,
+// stop loss at -50%, or a time exit after 12,000 slots held (~80 minutes) — selling
+// the whole position. No leverage, no shorts, no martingale, no randomness, no
+// clock: every decision comes only from the replay events the harness delivers, so
+// two runs agree byte for byte. On the kit's 24-hour dev window this loses the
+// least per coin of the patient variants while still trading 120 distinct coins,
+// comfortably above the 20-coin guardrail even on a 6-hour window.
 //
 // The bot speaks agent-fun/replay/v2 through the kit's SDK shim (vendor/makefun-bot.ts,
 // a byte-identical copy of sdk/ts/makefun-bot.ts). It runs as `node /bot/main.ts` on
@@ -28,13 +32,13 @@ import {
 } from './vendor/makefun-bot.ts';
 
 // --- tunables (all in whole units; bps = basis points, 10_000 = 100%) ---------
-const STAKE_LAMPORTS = LAMPORTS_PER_SOL / 4n; // 0.25 SOL per coin
+const STAKE_LAMPORTS = LAMPORTS_PER_SOL / 50n; // 0.02 SOL per coin
 const MIN_BUY_LAMPORTS = LAMPORTS_PER_SOL / 20n; // 0.05 SOL: smallest buy worth taking
-const MOMENTUM_MIN_TRADES = 4; // trades seen before a coin can qualify
-const MOMENTUM_BPS = 1_200n; // price must be >= +12% over its birth price
-const TAKE_PROFIT_BPS = 4_000n; // sell the whole position at +40%
-const STOP_LOSS_BPS = 2_500n; // sell the whole position at -25%
-const MAX_HOLD_SLOTS = 15_000; // time exit: ~100 minutes of slots held
+const MOMENTUM_MIN_TRADES = 1; // trades seen before a coin can qualify
+const MOMENTUM_BPS = 0n; // buy as soon as the size cap allows, no momentum filter
+const TAKE_PROFIT_BPS = 10_000n; // sell the whole position at +100%
+const STOP_LOSS_BPS = 5_000n; // sell the whole position at -50%
+const MAX_HOLD_SLOTS = 12_000; // time exit: ~80 minutes of slots held
 const MAX_SLIPPAGE_BPS = 5_000; // 50%: wide enough for the 2-slot latency, still bounded
 
 // --- per-coin memory (decisions only; nothing survives the run) ---------------

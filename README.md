@@ -8,9 +8,11 @@ A simple early-momentum paper-trading bot for the [Pump.fun Paper Sprint: Any Bo
 
 ## Strategy
 
-Watch every new pump.fun bonding curve from its `CreateEvent`, remember the price it is born at, and buy it once — a fixed 0.25 SOL stake — as soon as it shows real early momentum (at least 4 trades and a price at least 12% above its birth price, with enough real SOL reserve that the size cap allows a buy of at least 0.05 SOL). Never hold more than 5 coins at once, never buy the same coin twice, and never chase a coin that never shows momentum.
+Watch every new pump.fun bonding curve from its `CreateEvent` and buy it once — a small fixed 0.02 SOL stake — as soon as the size cap lets us buy at least 0.05 SOL worth (a fresh curve holds no real SOL, so the first trades have to arrive first; a coin whose cap never gets there is skipped for good). Never hold more than 5 coins at once, never buy the same coin twice: the small stake and the 5-slot cap keep any single dud cheap, while the fast rotation puts the bot on dozens of fresh coins per window so a rare runner can pay for the bleeders.
 
-Every position exits on one of three hard rules: take profit at +40%, stop loss at −25%, or a time exit after 15,000 slots held (~100 minutes). No leverage, no shorts, no martingale, no randomness, no clock — every decision comes only from the replay events the harness delivers, so two runs agree byte for byte.
+Every position exits on one of three hard rules: take profit at +100%, stop loss at −50%, or a time exit after 12,000 slots held (~80 minutes). No leverage, no shorts, no martingale, no randomness, no clock — every decision comes only from the replay events the harness delivers, so two runs agree byte for byte.
+
+Local backtest (kit's own `grade-local`, `--driver process`, 24-hour dev window): starting balance 10 SOL, final balance 9.4398 SOL, net PnL −0.5602 SOL, 235 fills over 120 coins, 120 round trips, win rate 14.2%, max drawdown 0.0584. The dev window is a 24-hour sample; the house final replay is 6 hours of fresh data recorded after entries close, so its numbers will differ.
 
 ## How it runs
 
